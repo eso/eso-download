@@ -7,7 +7,7 @@ name = "eso-download"
 description = "CLI to download ESO raw and Phase3 archive data and metadata"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "BSD"}
+license = {text = "MIT"}
 authors = [{name="Juan M. Carmona Loaiza", email="jcarmona@eso.org"}]
 keywords = ["ESO", "astroquery", "data", "archive", "astronomy"]
 dependencies = [
@@ -18,11 +18,6 @@ dynamic = ["version"]
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4",
-#    "pytest-doctestplus>=1.4",
-#    "pytest-timeout",
-#    "pytest-astropy",
-#    "pytest-dependency",
-#    "pytest-rerunfailures",
 ]
 
 [project.scripts]

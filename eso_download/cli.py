@@ -93,6 +93,7 @@ import keyring
 from astropy.table import Table
 import astroquery
 from astroquery.eso import Eso
+from ._version import __version__
 
 
 ASTROQUERY_MIN_VER = "0.4.12.dev10525"
@@ -110,9 +111,17 @@ def require_version(pkg, minimum, how_to_install_message):
         )
 
 
+def _build_eso_instance(max_rows: int = 100) -> Eso:
+    eso = Eso()
+    eso.ROW_LIMIT = max_rows
+    ua = eso._session.headers.get("User-Agent", "")
+    eso._session.headers["User-Agent"] = f"{ua} eso-download/{__version__}"
+    return eso
+
 # ------------ #
 #  COMMON API
 # ------------ #
+
 
 DEFAULT_RADIUS_DEG: float = 10.0 / 60.0  # 10 arcmin
 
@@ -151,8 +160,8 @@ class BaseEsoDownloader(ABC):
         count_only: bool = False,
         metadata_only: bool = False,
     ) -> None:
-        self.eso = Eso()
-        self.eso.ROW_LIMIT = max_rows
+        self.eso = _build_eso_instance(max_rows=max_rows)
+
         self.outdir = outdir
         self.with_calib = with_calib
         self.count_only = count_only
@@ -167,13 +176,15 @@ class BaseEsoDownloader(ABC):
         if self.user:
             if self.deauthenticate:
                 try:
-                    keyring.delete_password('astroquery:www.eso.org', self.user)
+                    keyring.delete_password(
+                        'astroquery:www.eso.org', self.user)
                 except keyring.errors.PasswordDeleteError as e:
                     print(e)
             else:
                 self.eso.login(username=self.user, store_password=True)
                 if not self.eso.authenticated():
-                    keyring.delete_password('astroquery:www.eso.org', self.user)
+                    keyring.delete_password(
+                        'astroquery:www.eso.org', self.user)
                     raise RuntimeError("Authentication failed")
                 self.authenticated = True
 
@@ -372,7 +383,8 @@ def register_phase3_subparser(
     add_shared_args
 ) -> None:
     """Register Phase3 CLI subcommand."""
-    p = subparsers.add_parser("phase3", help="Download ESO archive phase3 data")
+    p = subparsers.add_parser(
+        "phase3", help="Download ESO archive phase3 data")
     add_shared_args(p)
 
     p.add_argument("--target-name", help="Target name (metadata match)")
@@ -479,6 +491,7 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
 
 def main() -> None:
     """CLI entry point."""
+    require_version(astroquery, ASTROQUERY_MIN_VER, ASTROQUERY_INSTALL)
     parser = argparse.ArgumentParser(prog="eso-download",
                                      description="ESO archive downloader")
     subparsers = parser.add_subparsers(dest="<archive> = [raw | phase3]",
@@ -492,5 +505,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    require_version(astroquery, ASTROQUERY_MIN_VER, ASTROQUERY_INSTALL)
     main()
